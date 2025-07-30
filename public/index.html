@@ -39,7 +39,7 @@
         username = usernameInput.value.trim();
         if (!username) return alert("Enter a username");
 
-        socket = new WebSocket(`ws://${location.host}`);
+        const socket = new WebSocket(`wss://${location.host}`);
 
         socket.onopen = () => {
           socket.send(JSON.stringify({ type: "register", username }));
