@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSocket Chat</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h2>💬 WebSocket Chat</h2>
+
+      <div class="form-group">
+        <input type="text" id="username" placeholder="Enter your username" />
+        <button id="registerBtn">Register</button>
+      </div>
+
+      <div class="form-group">
+        <input type="text" id="to" placeholder="Recipient username" />
+        <input type="text" id="message" placeholder="Your message" />
+        <button id="sendBtn">Send</button>
+      </div>
+
+      <div id="chat"></div>
+    </div>
+
+    <script>
+      const registerBtn = document.getElementById("registerBtn");
+      const sendBtn = document.getElementById("sendBtn");
+      const usernameInput = document.getElementById("username");
+      const toInput = document.getElementById("to");
+      const messageInput = document.getElementById("message");
+      const chatBox = document.getElementById("chat");
+
+      let username = "";
+      let socket;
+
+      registerBtn.onclick = () => {
+        username = usernameInput.value.trim();
+        if (!username) return alert("Enter a username");
+
+        socket = new WebSocket(`ws://${location.host}`);
+
+        socket.onopen = () => {
+          socket.send(JSON.stringify({ type: "register", username }));
+          appendMessage("🟢 Connected as " + username);
+        };
+
+        socket.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          if (data.error) {
+            appendMessage("❗ " + data.error);
+          } else {
+            appendMessage(`📩 From ${data.from}: ${data.message}`);
+          }
+        };
+
+        socket.onclose = () => {
+          appendMessage("🔴 Disconnected");
+        };
+      };
+
+      sendBtn.onclick = () => {
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+          return alert("Not connected.");
+        }
+
+        const to = toInput.value.trim();
+        const msg = messageInput.value.trim();
+
+        if (!to || !msg) return alert("Both fields required.");
+
+        socket.send(
+          JSON.stringify({
+            type: "message",
+            to,
+            from: username,
+            message: msg,
+          })
+        );
+
+        appendMessage(`📤 To ${to}: ${msg}`);
+        messageInput.value = "";
+      };
+
+      function appendMessage(msg) {
+        const div = document.createElement("div");
+        div.textContent = msg;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+    </script>
+  </body>
+</html>
