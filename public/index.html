@@ -33,17 +33,21 @@
       const chatBox = document.getElementById("chat");
 
       let username = "";
-      let socket;
+      let socket = null;
 
       registerBtn.onclick = () => {
         username = usernameInput.value.trim();
         if (!username) return alert("Enter a username");
 
-        const socket = new WebSocket(`wss://${location.host}`);
+        socket = new WebSocket(
+          location.protocol === "https:"
+            ? `wss://${location.host}`
+            : `ws://${location.host}`
+        );
 
         socket.onopen = () => {
           socket.send(JSON.stringify({ type: "register", username }));
-          appendMessage("🟢 Connected as " + username);
+          appendMessage(`🟢 Connected as ${username}`);
         };
 
         socket.onmessage = (event) => {
@@ -55,20 +59,28 @@
           }
         };
 
+        socket.onerror = (err) => {
+          alert("WebSocket error: " + err.message);
+        };
+
         socket.onclose = () => {
           appendMessage("🔴 Disconnected");
         };
       };
 
       sendBtn.onclick = () => {
-        if (!socket || socket.readyState !== WebSocket.OPEN) {
-          return alert("Not connected.");
-        }
-
         const to = toInput.value.trim();
         const msg = messageInput.value.trim();
 
-        if (!to || !msg) return alert("Both fields required.");
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+          alert("Not connected");
+          return;
+        }
+
+        if (!to || !msg) {
+          alert("Recipient and message required");
+          return;
+        }
 
         socket.send(
           JSON.stringify({
